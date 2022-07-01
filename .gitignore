@@ -40,3 +40,5 @@ tests/bin/
 
 # .zip files must be explicited whitelisted
 *.zip
+
+**/target/**
