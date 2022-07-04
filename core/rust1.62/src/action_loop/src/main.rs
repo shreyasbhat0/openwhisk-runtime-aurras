@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use runtime::main as invoke;
+use actions::main as actionMain;
 
 use serde_derive::Deserialize;
 use serde_json::{Error, Value};
@@ -43,7 +43,9 @@ fn main() {
     let stdin = stdin();
     for line in stdin.lock().lines() {
         let buffer: String = line.expect("Error reading line");
+        println!("{:?}",buffer.clone());
         let parsed_input: Result<Input, Error> = serde_json::from_str(&buffer);
+        println!("{:?}",parsed_input);
         match parsed_input {
             Ok(input) => {
                 for (key, val) in input.environment {
@@ -53,12 +55,15 @@ fn main() {
                         env::set_var(format!("__OW_{}", key.to_uppercase()), val.to_string());
                     };
                 }
-                match invoke(input.value) {
+                match actionMain(input.value.clone()) {
                     Ok(action_result) => match serde_json::to_string(&action_result) {
                         Ok(response) => {
+                            println!("{}",response);
                             writeln!(&mut fd3, "{}", response).expect("Error writing on fd3")
                         }
-                        Err(err) => log_error(&mut fd3, err),
+                        Err(err) => {
+                            println!("{:?}",input.value.clone());
+                            log_error(&mut fd3, err)},
                     },
                     Err(err) => {
                         log_error(&mut fd3, err);
@@ -66,6 +71,7 @@ fn main() {
                 }
             }
             Err(err) => {
+                
                 log_error(&mut fd3, err);
             }
         }

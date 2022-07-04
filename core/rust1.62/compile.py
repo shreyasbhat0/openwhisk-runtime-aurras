@@ -44,13 +44,30 @@ def copy_replace(src, dst, match=None, replacement=""):
 cargo_action = """[package]
 name = "actions"
 version = "0.1.0"
-authors = ["Roberto Diaz <roberto@theagilemonkeys.com>"]
 edition = "2018"
 
+
+
 [dependencies]
-serde_json = "1.0"
-serde = "1.0"
-serde_derive = "1.0"
+serde = { version = "1.0.81", features = ["derive"]}
+serde_json = "1.0.81"
+serde_derive = "1.0.81"
+anyhow = "1.0.56"
+wasmtime = "0.34"
+wasmtime-wasi = "0.34"
+wasi-common = "0.34"
+bytes = "1"
+futures = "0.3"
+http = "0.2"
+reqwest = { version = "0.11", default-features = true, features = [
+        "json",
+        "blocking",
+    ] }
+thiserror = "1.0"
+tokio = { version = "1.4.0", features = [ "full" ] }
+tracing = { version = "0.1", features = [ "log" ] }
+url = "2.2.1"
+   
 """
 
 def build(tgt_dir):

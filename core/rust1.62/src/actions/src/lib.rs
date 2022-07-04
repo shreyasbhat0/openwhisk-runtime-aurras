@@ -1,44 +1,51 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-extern crate serde_json;
-
-use serde_derive::{Deserialize, Serialize};
+use serde::{Serialize,Deserialize};
+use wasmtime::*;
+use wasmtime_wasi::sync::WasiCtxBuilder;
+mod wasi_http;
+use wasi_http::HttpCtx;
 use serde_json::{Error, Value};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct Input {
-    #[serde(default = "stranger")]
-    name: String,
-}
+pub static  BINARY_WASM : &'static [u8]  = include_bytes!("../workflow.wasm");
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct Output {
-    greeting: String,
+pub struct Input{
+    allowed_hosts: Option<Vec<String>>,
 }
 
-fn stranger() -> String {
-    "stranger".to_string()
-}
+pub fn main(args: Value) -> Result<Value, Error>{
+    println!("{:?}",args);
 
-pub fn main(args: Value) -> Result<Value, Error> {
-    let input: Input = serde_json::from_value(args)?;
-    let output = Output {
-        greeting: format!("Hello, {}", input.name),
-    };
-    serde_json::to_value(output)
+    let input = serde_json::from_value::<Input>(args)?;
+    println!("{:?}",input);
+
+    
+    let engine = Engine::default();
+
+    // First set up our linker which is going to be linking modules together. We
+    // want our linker to have wasi available, so we set that up here as well.
+    let mut linker = Linker::new(&engine);
+    wasmtime_wasi::add_to_linker(&mut linker, |s| s).unwrap();
+    let linking = Module::from_binary(&engine, BINARY_WASM).unwrap();
+   
+    let wasi = WasiCtxBuilder::new()
+        .inherit_stdio()
+        .inherit_args().unwrap()
+        .build();
+    let mut store = Store::new(&engine, wasi);
+    let max_concurrent_requests = Some(42);
+
+    let http = HttpCtx::new(input.allowed_hosts, max_concurrent_requests).unwrap();
+    http.add_to_linker(&mut linker).unwrap();
+    
+
+    linker.module(&mut store, "", &linking).unwrap();
+    linker
+        .get_default(&mut store, "").unwrap()
+        .typed::<(), (), _>(&store).unwrap()
+        .call(&mut store, ()).unwrap();
+
+   
+    
+
+Ok(serde_json::json!("{ee}"))
 }

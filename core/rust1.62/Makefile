@@ -16,7 +16,7 @@
 #
 
 USER=docker.io/openwhisk
-IMAGE=action-rust-v1.34
+IMAGE=action-rust-v1.62
 
 .PHONY: build
 

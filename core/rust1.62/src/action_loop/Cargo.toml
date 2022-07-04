@@ -25,5 +25,5 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 libc = "0.2.49"
-runtime = { path = "../runtime" }
+actions = { path = "../actions" }
 
